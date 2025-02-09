@@ -20,15 +20,17 @@ module uart_rx_fsm_tb;
     );
 
     // Clock generation (50MHz -> 20ns period)
-    always #10 clk = ~clk;
+    always #10 clk = ~clk;  // Clock toggles every 10ns (20ns period)
 
     // Task to simulate 8-bit data reception
     task send_8_bits;
         integer i;
         begin
             for (i = 0; i < 8; i = i + 1) begin
-                #20 rx_bit_done <= 1;  // Simulate bit received
-                #20 rx_bit_done <= 0;
+                @(posedge clk);  // Wait for clock edge
+                rx_bit_done <= 1;  
+                @(posedge clk);
+                rx_bit_done <= 0;
             end
         end
     endtask
@@ -37,37 +39,47 @@ module uart_rx_fsm_tb;
     initial begin
         // Initialize signals
         clk = 0;
-        reset = 0;
+        reset = 1; // Start with reset active
         rx_bit_done = 0;
         byte_done = 0;
         parity_done = 0;
 
         // Apply reset
-        #20 reset <= 1;
-        #20 reset <= 0;
+        @(posedge clk);
+        reset <= 0;
 
         // Test IDLE -> START
-        #20 rx_bit_done <= 1;
-        #20 rx_bit_done <= 0;
+        @(posedge clk);
+        rx_bit_done <= 1;
+        @(posedge clk);
+        rx_bit_done <= 0;
 
         // Test START -> DATA
-        #20 rx_bit_done <= 1;
-        #20 rx_bit_done <= 0;
+        @(posedge clk);
+        rx_bit_done <= 1;
+        @(posedge clk);
+        rx_bit_done <= 0;
 
         // Simulate receiving 8 bits (DATA state)
         send_8_bits();
 
         // Signal that byte is complete
-        #20 byte_done <= 1;
-        #20 byte_done <= 0;
+        @(posedge clk);
+        byte_done <= 1;
+        @(posedge clk);
+        byte_done <= 0;
 
         // Test PARITY -> STOP
-        #20 parity_done <= 1;
-        #20 parity_done <= 0;
+        @(posedge clk);
+        parity_done <= 1;
+        @(posedge clk);
+        parity_done <= 0;
 
         // Test STOP -> IDLE
-        #20 rx_bit_done <= 1;
-        #20 rx_bit_done <= 0;
+        @(posedge clk);
+        rx_bit_done <= 1;
+        @(posedge clk);
+        rx_bit_done <= 0;
 
         // End simulation
         #50 $finish;
